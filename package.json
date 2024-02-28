@@ -1,0 +1,9 @@
+{
+    "scripts": {
+        "start": "npm i  && sleep 2  && nodemon index.js"
+    },
+    "dependencies": {
+        "express": "^4.18.2",
+        "mysql2": "^3.9.2"
+    }
+}
