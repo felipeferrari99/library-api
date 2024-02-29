@@ -16,11 +16,19 @@ module.exports.createBook = async (req, res) => {
         authorId = authorRows[0].id;
     }
     await con.promise().query('INSERT INTO books (title, release_date, image, author) VALUES (?, ?, ?, ?)', [title, release_date, image, authorId]);
-    res.send("DEU BOM");
+    res.json('Book created');
 }
 
 module.exports.deleteBook = async (req, res) => {
     const { id } = req.params;
+    await con.promise().query('DELETE FROM comments WHERE book_id = ?', [id]);
     await con.promise().query('DELETE FROM books WHERE id = ?', [id]);
-    res.send("DEU BOM")
+    res.json('Book deleted');
+}
+
+module.exports.showBook = async (req, res) => {
+    const { id } = req.params;
+    con.query('SELECT books.*, comments.body, comments.user, users.username FROM books INNER JOIN comments ON comments.book_id = books.id INNER JOIN users ON comments.user = users.id WHERE books.id = ?', [id], (err, book) => {
+      res.send(book)
+    });
 }

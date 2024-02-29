@@ -26,16 +26,12 @@ con.connect(function (err) {
 
 async function userExists(username, email) {
   return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM users WHERE username = ? OR email = ?`;
+    const query = 'SELECT * FROM users WHERE username = ? OR email = ?';
     con.query(query, [username, email], function (err, rows) {
       if (err) {
         reject(err);
       } else {
-        if (rows.length > 0) {
-          reject(new Error('Username or email already exists'));
-        } else {
-          resolve(false);
-        }
+        resolve(rows.length > 0);
       }
     });
   });
@@ -46,7 +42,12 @@ async function hashPassword(password) {
   return hashedPassword;
 }
 
+const comparePassword = async (password, hash) => {
+  return await bcrypt.compare(password, hash);
+};
+
 module.exports = {
   userExists,
-  hashPassword
+  hashPassword,
+  comparePassword
 };
