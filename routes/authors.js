@@ -1,10 +1,12 @@
 const express = require("express");
 const router = express.Router();
 const authors = require('../controllers/authors');
+const jwtAuth = require('../middlewares/jwtAuth');
+const isAdmin = require('../middlewares/isAdmin');
 
-router.post('/', authors.createAuthor);
+router.post('/', jwtAuth, isAdmin, authors.createAuthor);
 router.get('/', authors.getAuthors);
 router.get('/:id', authors.showAuthor);
-router.delete('/:id', authors.deleteAuthor);
+router.delete('/:id', jwtAuth, isAdmin, authors.deleteAuthor);
 
 module.exports = router;

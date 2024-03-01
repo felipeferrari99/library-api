@@ -13,8 +13,4 @@ router.post("/login", users.login);
 
 router.get('/logout', users.logout);
 
-router.get('/protected', jwtAuth, (req, res) => {
-  res.send('Protected route accessed successfully');
-});
-
 module.exports = router;

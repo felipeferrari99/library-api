@@ -11,8 +11,9 @@ const userRoutes = require('./routes/users');
 const authorRoutes = require('./routes/authors');
 const bookRoutes = require('./routes/books');
 const commentRoutes = require('./routes/comments');
+const rentRoutes = require('./routes/rents');
 
-app.use(userRoutes);
+app.use('/', userRoutes, rentRoutes);
 app.use('/authors', authorRoutes);
 app.use('/books', bookRoutes);
 app.use('/books/:id/comments', commentRoutes);

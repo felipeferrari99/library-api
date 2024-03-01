@@ -1,14 +1,10 @@
 const con = require('../database/db');
-const jwt = require('jsonwebtoken');
-const jwtSecret = 'your_jwt_secret';
 
 module.exports.createComment = async (req, res) => {
-    const token = req.headers['authorization']?.split(' ')[1];
+    const userId = req.userId;
     const bookId = req.params.id;
     const { body } = req.body;
-    const decoded = jwt.verify(token, jwtSecret);  
-    const id = decoded.userId;
-    await con.promise().query('INSERT INTO comments (body, book_id, user) VALUES (?, ?, ?)', [body, bookId, id]);
+    await con.promise().query('INSERT INTO comments (body, book_id, user) VALUES (?, ?, ?)', [body, bookId, userId]);
     res.json('Comment created');
 }
 

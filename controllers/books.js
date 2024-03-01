@@ -7,7 +7,7 @@ module.exports.getBooks = async (req, res) => {
 }
 
 module.exports.createBook = async (req, res) => {
-    const { title, release_date, image, author } = req.body;
+    const { title, release_date, image, author, qty_available } = req.body;
     const [authorRows] = await con.promise().query('SELECT id FROM authors WHERE name = ?', [author]);
     if (authorRows.length === 0) {
         const [insertedAuthor] = await con.promise().query('INSERT INTO authors (name) VALUES (?)', [author]);
@@ -15,7 +15,7 @@ module.exports.createBook = async (req, res) => {
     } else {
         authorId = authorRows[0].id;
     }
-    await con.promise().query('INSERT INTO books (title, release_date, image, author) VALUES (?, ?, ?, ?)', [title, release_date, image, authorId]);
+    await con.promise().query('INSERT INTO books (title, release_date, qty_available, image, author) VALUES (?, ?, ?, ?, ?)', [title, release_date, qty_available, image, authorId]);
     res.json('Book created');
 }
 
@@ -28,7 +28,17 @@ module.exports.deleteBook = async (req, res) => {
 
 module.exports.showBook = async (req, res) => {
     const { id } = req.params;
-    con.query('SELECT books.*, comments.body, comments.user, users.username FROM books INNER JOIN comments ON comments.book_id = books.id INNER JOIN users ON comments.user = users.id WHERE books.id = ?', [id], (err, book) => {
-      res.send(book)
-    });
+    con.query('SELECT books.*, authors.name FROM books INNER JOIN authors ON books.author = authors.id WHERE books.id = ?', [id], (err, results) => {
+        const book = results[0];
+        if (!book) {
+            return res.status(404).json({ message: 'Book not found' });
+        }
+        con.query('SELECT comments.id, comments.body, users.username FROM comments INNER JOIN users ON comments.user = users.id WHERE comments.book_id = ?', id, (err, comments) => {
+            const responseData = {
+                book: book,
+                comments: comments
+            };
+            res.json(responseData);
+        });
+    })
 }

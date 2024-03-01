@@ -7,11 +7,20 @@ module.exports.getAuthors = async (req, res) => {
 }
 
 module.exports.showAuthor = async (req, res) => {
-    const { id } = req.params;
-    con.query('SELECT authors.*, books.title FROM authors INNER JOIN books ON authors.id = books.author WHERE authors.id = ?', [id], (err, author) => {
-      res.send(author)
-    });
-}
+  const { id } = req.params;
+  con.query('SELECT * FROM authors WHERE authors.id = ?', [id], (err, author) => {
+      if (!author) {
+          return res.status(404).json({ message: 'Author not found' });
+      }
+      con.query('SELECT title FROM books WHERE author = ?', [id], (err, books) => {
+          const responseData = {
+              author: author,
+              books: books
+          };
+          res.json(responseData);
+      });
+  });
+};
 
 module.exports.createAuthor = async (req, res) => {
     const { name } = req.body;

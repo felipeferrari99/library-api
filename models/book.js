@@ -7,6 +7,7 @@ con.connect(function (err) {
       title VARCHAR(255) NOT NULL,
       release_date DATE NOT NULL,
       image VARCHAR(255) NOT NULL,
+      qty_available INT NOT NULL,
       author INT NOT NULL,
       FOREIGN KEY (author) REFERENCES authors(id)
     )`;

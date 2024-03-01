@@ -5,7 +5,7 @@ const jwtSecret = 'your_jwt_secret';
 const passport = require("passport");
 
 const generateToken = (user) => {
-  const payload = { userId: user.id, username: user.username };
+  const payload = { userId: user.id, username: user.username, type: user.type };
   return jwt.sign(payload, jwtSecret, { expiresIn: "1h" });
 };
 
@@ -14,32 +14,33 @@ module.exports.register = async (req, res, next) => {
     const { username, email, password } = req.body;
     const existingUser = await userExists(username, email);
     if (existingUser) {
-      throw new Error('User already exists');
+      return res.status(400).json({ message: 'User already exists' });
     }
     const hashedPassword = await hashPassword(password);
-    db.query('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', [username, email, hashedPassword], function (err, registeredUser) {
+    db.query('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', [username, email, hashedPassword], function (err, result) {
       if (err) {
-        throw err;
+        console.error('Error registering user:', err);
+        return res.status(500).json({ message: 'Internal server error' });
       }
-      const token = generateToken(registeredUser.insertId, username);
-      res.setHeader('Content-Type', 'application/json');
+      const token = generateToken({ id: result.insertId, username, type: 'user' });
       res.json({ token });
     });
   } catch (err) {
-    res.status(500).json({ message: 'Internal server error.' });
+    console.error('Error registering user:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 module.exports.login = (req, res, next) => {
   passport.authenticate("local", (err, user) => {
     if (err) {
-      return res.status(500).json({ message: "Internal server error." });
+      console.error('Error during login:', err);
+      return res.status(500).json({ message: 'Internal server error' });
     }
     if (!user) {
-      return res.status(401).json({ message: "Invalid username or password." });
+      return res.status(401).json({ message: 'Invalid username or password' });
     }
     const token = generateToken(user);
-    res.setHeader('Content-Type', 'application/json');
     res.json({ token });
   })(req, res, next);
 };
@@ -66,7 +67,7 @@ module.exports.loginStrategy = async (username, password, done) => {
       return done(null, false, { message: 'Incorrect username or password.' });
     }
 
-    return done(null, { id: user.id, username: user.username });
+    return done(null, { id: user.id, username: user.username, type: user.type });
   } catch (err) {
     return done(err);
   }
