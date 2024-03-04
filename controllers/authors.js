@@ -31,9 +31,12 @@ module.exports.createAuthor = async (req, res) => {
 module.exports.deleteAuthor = async (req, res) => {
     const { id } = req.params;
     const [books] = await con.promise().query('SELECT id FROM books WHERE author = ?', [id]);
-    const bookIds = books.flatMap((book) => book.id);
-    await con.promise().query('DELETE FROM comments WHERE book_id IN (?)', [bookIds]);
-    await con.promise().query('DELETE FROM books WHERE author = ?', [id]);
+    if (books && books.length > 0) {
+        const bookIds = books.map((book) => book.id);
+        await con.promise().query('DELETE FROM rents WHERE book_id IN (?)', [bookIds]);
+        await con.promise().query('DELETE FROM comments WHERE book_id IN (?)', [bookIds]);
+        await con.promise().query('DELETE FROM books WHERE author = ?', [id]);
+    }
     await con.promise().query('DELETE FROM authors WHERE id = ?', [id]);
     res.json('Author deleted');
 };

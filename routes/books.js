@@ -6,7 +6,8 @@ const isAdmin = require('../middlewares/isAdmin');
 
 router.get('/', books.getBooks);
 router.post('/', jwtAuth, isAdmin, books.createBook);
-router.delete('/:id', jwtAuth,isAdmin, books.deleteBook);
+router.delete('/:id', jwtAuth, isAdmin, books.deleteBook);
+router.put('/:id', jwtAuth, isAdmin, books.updateBook);
 router.get('/:id', books.showBook);
 
 module.exports = router;

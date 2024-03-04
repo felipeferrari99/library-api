@@ -5,7 +5,9 @@ con.connect(function (err) {
     CREATE TABLE IF NOT EXISTS rents (
       id INT AUTO_INCREMENT PRIMARY KEY,
       date_rented DATE NOT NULL,
-      date_returned DATE NOT NULL,
+      date_for_return DATE NOT NULL,
+      date_returned DATE,
+      status VARCHAR(255) NOT NULL DEFAULT "active",
       book_id INT NOT NULL,
       user INT NOT NULL,
       FOREIGN KEY (book_id) REFERENCES books(id),
