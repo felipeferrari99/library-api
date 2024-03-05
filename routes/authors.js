@@ -8,5 +8,6 @@ router.post('/', jwtAuth, isAdmin, authors.createAuthor);
 router.get('/', authors.getAuthors);
 router.get('/:id', authors.showAuthor);
 router.delete('/:id', jwtAuth, isAdmin, authors.deleteAuthor);
+router.put('/:id', jwtAuth, isAdmin, authors.updateAuthor);
 
 module.exports = router;

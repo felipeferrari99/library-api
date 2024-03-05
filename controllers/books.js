@@ -36,8 +36,11 @@ module.exports.deleteBook = async (req, res) => {
 }
 
 module.exports.updateBook = async (req, res) => {
-    const { title, release_date, image, author, qty_available } = req.body;
+    const { title, release_date, description, image, author, qty_available } = req.body;
     const { id } = req.params;
+    const [oldRows] = await con.promise().query('SELECT image FROM books WHERE id = ?', [id]);
+    const oldImageUrl = oldRows[0].image;
+    const oldPublicId = oldImageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
     const [authorRows] = await con.promise().query('SELECT id FROM authors WHERE name = ?', [author]);
     if (authorRows.length === 0) {
         const [insertedAuthor] = await con.promise().query('INSERT INTO authors (name) VALUES (?)', [author]);
@@ -45,7 +48,13 @@ module.exports.updateBook = async (req, res) => {
     } else {
         authorId = authorRows[0].id;
     }
-    await con.promise().query('UPDATE books SET title = ?, release_date = ?, image = ?, author = ?, qty_available = ? WHERE id = ?', [title, release_date, image, authorId, qty_available, id]);
+    await con.promise().query('UPDATE books SET title = ?, release_date = ?, description = ?, image = ?, author = ?, qty_available = ? WHERE id = ?', [title, release_date, description, image, authorId, qty_available, id]);
+    const [rows] = await con.promise().query('SELECT image FROM books WHERE id = ?', [id]);
+    const imageUrl = rows[0].image;
+    const publicId = imageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
+    if (publicId !== oldPublicId && oldPublicId !== 'library/Pb4eTcn7tJ') {
+        await cloudinary.uploader.destroy(oldPublicId);
+    }
     res.json('Book updated');
 }
 

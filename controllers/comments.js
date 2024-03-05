@@ -14,3 +14,11 @@ module.exports.deleteComment = async (req, res) => {
     await con.promise().query('DELETE FROM comments WHERE id = ?', [commentId]);
     res.json('Comment deleted');
 }
+
+module.exports.updateComment = async (req, res) => {
+    const bookId = req.params.id;
+    const { commentId } = req.params;
+    const { body } = req.body;
+    await con.promise().query('UPDATE comments SET body = ? WHERE id = ?', [body, commentId]);
+    res.json('Comment updated');
+}
