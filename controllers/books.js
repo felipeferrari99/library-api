@@ -2,7 +2,7 @@ const con = require('../database/db');
 const { cloudinary } = require('../cloudinary');
 
 module.exports.getBooks = async (req, res) => {
-    con.query('SELECT books.*, authors.name FROM books INNER JOIN authors ON books.author = authors.id', (err, books) => {
+    con.query('SELECT books.*, authors.name as authorName FROM books INNER JOIN authors ON books.author = authors.id', (err, books) => {
       res.send(books)
     });
 }
@@ -60,7 +60,7 @@ module.exports.updateBook = async (req, res) => {
 
 module.exports.showBook = async (req, res) => {
     const { id } = req.params;
-    con.query('SELECT books.*, authors.name FROM books INNER JOIN authors ON books.author = authors.id WHERE books.id = ?', [id], (err, results) => {
+    con.query('SELECT books.*, authors.name as authorName FROM books INNER JOIN authors ON books.author = authors.id WHERE books.id = ?', [id], (err, results) => {
         const book = results[0];
         if (!book) {
             return res.status(404).json({ message: 'Book not found' });

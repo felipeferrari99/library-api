@@ -1,7 +1,7 @@
 const con = require('../database/db');
 
 module.exports.getAvailableBooks = async (req, res) => {
-    con.query('SELECT books.*, authors.name FROM books INNER JOIN authors ON books.author = authors.id WHERE qty_available > 0', (err, books) => {
+    con.query('SELECT books.*, authors.name as authorName FROM books INNER JOIN authors ON books.author = authors.id WHERE qty_available > 0', (err, books) => {
       res.send(books)
     });
 }
@@ -21,14 +21,14 @@ module.exports.createRent = async (req, res) => {
 }
 
 module.exports.allRents = async (req, res) => {
-    con.query('SELECT rents.*, books.title, authors.name, users.username FROM rents INNER JOIN books ON rents.book_id = books.id INNER JOIN authors ON books.author = authors.id INNER JOIN users ON rents.user = users.id', (err, rents) => {
+    con.query('SELECT rents.*, books.title, authors.name as authorName, users.username FROM rents INNER JOIN books ON rents.book_id = books.id INNER JOIN authors ON books.author = authors.id INNER JOIN users ON rents.user = users.id', (err, rents) => {
         res.send(rents)
     });
 }
 
 module.exports.myRents = async (req, res) => {
     const userId = req.userId;
-    con.query('SELECT rents.*, books.title, authors.name FROM rents INNER JOIN books ON rents.book_id = books.id INNER JOIN authors ON books.author = authors.id WHERE rents.user = ?', [userId], (err, rents) => {
+    con.query('SELECT rents.*, books.title, authors.name as authorName FROM rents INNER JOIN books ON rents.book_id = books.id INNER JOIN authors ON books.author = authors.id WHERE rents.user = ?', [userId], (err, rents) => {
         res.send(rents)
     });
 }
