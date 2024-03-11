@@ -8,8 +8,11 @@ module.exports.getBooks = async (req, res) => {
 }
 
 module.exports.createBook = async (req, res) => {
-    // const image = req.file.path
-    const { title, release_date, image, author, qty_available } = req.body;
+    let image = 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709664984/library/Pb4eTcn7tJ.jpg';
+    if (req.file) {
+        image = req.file.path;
+    }
+    const { title, release_date, author, qty_available } = req.body;
     const [authorRows] = await con.promise().query('SELECT id FROM authors WHERE name = ?', [author]);
     if (authorRows.length === 0) {
         const [insertedAuthor] = await con.promise().query('INSERT INTO authors (name) VALUES (?)', [author]);
