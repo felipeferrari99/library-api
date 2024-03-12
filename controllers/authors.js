@@ -24,8 +24,12 @@ module.exports.showAuthor = async (req, res) => {
 };
 
 module.exports.createAuthor = async (req, res) => {
-    const { name } = req.body;
-    await con.promise().query('INSERT INTO authors (name) VALUES (?)', name);
+    let image = 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709583405/library/Kw9sLx3vPq.png';
+    if (req.file) {
+        image = req.file.path;
+    }
+    const { name, description } = req.body;
+    await con.promise().query('INSERT INTO authors (name, image, description) VALUES (?, ?, ?)', [name, image, description]);
     res.json('Author created');
 }
 
@@ -55,7 +59,11 @@ module.exports.deleteAuthor = async (req, res) => {
 };
 
 module.exports.updateAuthor = async (req, res) => {
-    const { name, image, description } = req.body;
+    let image = 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709583405/library/Kw9sLx3vPq.png';
+    if (req.file) {
+        image = req.file.path;
+    }
+    const { name, description } = req.body;
     const { id } = req.params;
     const [oldRows] = await con.promise().query('SELECT image FROM authors WHERE id = ?', [id]);
     const oldImageUrl = oldRows[0].image;

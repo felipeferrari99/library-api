@@ -52,7 +52,11 @@ module.exports.updateUser = async (req, res, next) => {
   const [oldRows] = await con.promise().query('SELECT image FROM users WHERE id = ?', [id]);
   const oldImageUrl = oldRows[0].image;
   const oldPublicId = oldImageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
-  const { username, password, image, description, favorite_book } = req.body;
+  let image = 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709583405/library/Kw9sLx3vPq.png';
+  if (req.file) {
+      image = req.file.path;
+  }
+  const { username, password, description, favorite_book } = req.body;
   if (username !== req.user.username) {
     if (await userExists(username)) return res.status(400).json({ message: 'User already exists' });
   }
