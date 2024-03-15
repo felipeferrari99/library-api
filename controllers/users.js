@@ -96,13 +96,8 @@ module.exports.updateUser = async (req, res, next) => {
     }
   }
   await con.promise().query("UPDATE users SET email = ?, password = ?, description = ?, favorite_book = ? WHERE id = ?", [email, hashedPassword, description, bookId, id]);
-  await passport.authenticate("local", (err, user) => {
-    if (err) {
-      console.error("Error during login:", err);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-    res.json({ token: generateToken(user) });
-  })(req, res, next);
+  res.json('User updated');
+  (req, res, next);
 };
 
 module.exports.changeImage = async (req, res, next) => {
