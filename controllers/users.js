@@ -3,10 +3,11 @@ const { userExists, hashPassword, comparePassword } = require('../models/user');
 const jwt = require('jsonwebtoken');
 const jwtSecret = 'your_jwt_secret';
 const passport = require("passport");
+const bcrypt = require("bcrypt");
 const { cloudinary } = require('../cloudinary');
 
 const generateToken = (user) => {
-  const payload = { userId: user.id, username: user.username, type: user.type };
+  const payload = { userId: user.id, username: user.username, type: user.type, image: user.image };
   return jwt.sign(payload, jwtSecret, { expiresIn: "1h" });
 };
 
@@ -18,13 +19,24 @@ module.exports.register = async (req, res, next) => {
       return res.status(400).json({ message: 'User already exists' });
     }
     const hashedPassword = await hashPassword(password);
-    con.query('INSERT INTO users (username, email, password) VALUES (?, ?, ?)', [username, email, hashedPassword], function (err, result) {
+    const query = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
+    con.query(query, [username, email, hashedPassword], function (err, result) {
       if (err) {
         console.error('Error registering user:', err);
         return res.status(500).json({ message: 'Internal server error' });
       }
-      const token = generateToken({ id: result.insertId, username, type: 'user' });
-      res.json({ token });
+      con.promise().query('SELECT image FROM users WHERE id = ?', [result.insertId])
+        .then(([rows, fields]) => {
+          const image = rows[0].image;
+          const payload = { id: result.insertId, username, type: 'user', image };
+          const token = generateToken(payload);
+          decodedToken = JSON.parse(atob(token.split('.')[1]));
+          res.json({ token });
+        })
+        .catch(err => {
+          console.error('Error fetching user image:', err);
+          return res.status(500).json({ message: 'Internal server error' });
+        });
     });
   } catch (err) {
     console.error('Error registering user:', err);
@@ -41,44 +53,107 @@ module.exports.login = (req, res, next) => {
     if (!user) {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
-    const token = generateToken(user);
-    res.json({ token });
+    con.promise().query('SELECT image FROM users WHERE id = ?', [user.id])
+    .then(([rows, fields]) => {
+      const image = rows[0].image;
+      const payload = { id: user.id, username: user.username, type: user.type, image };
+      const token = generateToken(payload);
+      decodedToken = JSON.parse(atob(token.split('.')[1]));
+      res.json({ token });
+    })
+    .catch(err => {
+      console.error('Error fetching user image:', err);
+      return res.status(500).json({ message: 'Internal server error' });
+    });
   })(req, res, next);
 };
 
 module.exports.updateUser = async (req, res, next) => {
   const id = req.userId;
-  if (id != req.params.id) return res.status(401).json({ message: 'Unauthorized.' });
-  const [oldRows] = await con.promise().query('SELECT image FROM users WHERE id = ?', [id]);
-  const oldImageUrl = oldRows[0].image;
-  const oldPublicId = oldImageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
+  if (id != req.params.id) return res.status(401).json({ message: "Unauthorized." });
+  const { email, password, description, favorite_book } = req.body;
+  const [oldRows] = await con.promise().query("SELECT email, password FROM users WHERE id = ?", [id]);
+  const oldPassword = oldRows[0].password;
+  const oldEmail = oldRows[0].email;
+  if (email !== oldEmail) {
+    if (await userExists(null, email)) return res.status(400).json({ message: "User already exists" });
+  }
+  const [bookRows] = await con.promise().query("SELECT id FROM books WHERE title = ?", [favorite_book]);
+  const bookId = bookRows.length ? bookRows[0].id : null;
+  if (password && password.length < 3) return res.status(400).json({ message: "Password is too short." });
+  let hashedPassword = oldPassword;
+  if (password && password !== oldPassword) {
+    const isPasswordMatch = await new Promise((resolve, reject) => {
+      bcrypt.compare(password, oldPassword, function (err, res) {
+        if (err) {
+          reject(err);
+        }
+        resolve(res);
+      });
+    });
+    if (!isPasswordMatch) {
+      hashedPassword = await hashPassword(password);
+    }
+  }
+  await con.promise().query("UPDATE users SET email = ?, password = ?, description = ?, favorite_book = ? WHERE id = ?", [email, hashedPassword, description, bookId, id]);
+  await passport.authenticate("local", (err, user) => {
+    if (err) {
+      console.error("Error during login:", err);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+    res.json({ token: generateToken(user) });
+  })(req, res, next);
+};
+
+module.exports.changeImage = async (req, res, next) => {
   let image = 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709583405/library/Kw9sLx3vPq.png';
   if (req.file) {
       image = req.file.path;
   }
-  const { username, password, description, favorite_book } = req.body;
-  if (username !== req.user.username) {
-    if (await userExists(username)) return res.status(400).json({ message: 'User already exists' });
-  }
-  const [rows] = await con.promise().query('SELECT id FROM books WHERE title = ?', [favorite_book]);
-  const bookId = rows.length ? rows[0].id : null;
-  if (password.length < 3) return res.status(400).json({ message: 'Password is too short.' });
-  const hashedPassword = await hashPassword(password);
-  await con.promise().query('UPDATE users SET username = ?, password = ?, image = ?, description = ?, favorite_book = ? WHERE id = ?', [username, hashedPassword, image, description, bookId, id]);
-  const [newRows] = await con.promise().query('SELECT image FROM users WHERE id = ?', [id]);
-  const imageUrl = newRows[0].image;
+  const { id } = req.params;
+  const [oldRows] = await con.promise().query('SELECT image FROM users WHERE id = ?', [id]);
+  const oldImageUrl = oldRows[0].image;
+  const oldPublicId = oldImageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
+  await con.promise().query('UPDATE users SET image = ? WHERE id = ?', [image, id]);
+  const [rows] = await con.promise().query('SELECT image FROM users WHERE id = ?', [id]);
+  const imageUrl = rows[0].image;
   const publicId = imageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
   if (publicId !== oldPublicId && oldPublicId !== 'library/Kw9sLx3vPq') {
-    await cloudinary.uploader.destroy(oldPublicId);
+      await cloudinary.uploader.destroy(oldPublicId);
   }
   passport.authenticate("local", (err, user) => {
     if (err) {
       console.error('Error during login:', err);
       return res.status(500).json({ message: 'Internal server error' });
     }
-    res.json({ token: generateToken(user) });
+    con.promise().query('SELECT username, type, image FROM users WHERE id = ?', [id])
+        .then(([rows, fields]) => {
+          const image = rows[0].image;
+          const username = rows[0].username;
+          const type = rows[0].type;
+          const payload = { id: id, username, type, image };
+          const token = generateToken(payload);
+          decodedToken = JSON.parse(atob(token.split('.')[1]));
+          res.json({ token });
+        })
   })(req, res, next);
-}
+};
+
+module.exports.showUser = async (req, res) => {
+  const { id } = req.params;
+  con.query('SELECT * FROM users WHERE id = ?', [id], (err, user) => {
+      if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+      con.query('SELECT users.favorite_book, books.title, books.image, books.author, authors.name as authorName FROM users INNER JOIN books ON books.id = users.favorite_book INNER JOIN authors ON books.author = authors.id WHERE users.id = ?;', [id], (err, favorite_book) => {
+          const responseData = {
+              user: user,
+              book: favorite_book
+          };
+          res.json(responseData);
+      });
+  });
+};
 
 module.exports.loginStrategy = async (username, password, done) => {
   try {

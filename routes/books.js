@@ -10,7 +10,8 @@ const upload = multer({ storage });
 router.get('/', books.getBooks);
 router.post('/', jwtAuth, isAdmin, upload.single('image'), books.createBook);
 router.delete('/:id', jwtAuth, isAdmin, books.deleteBook);
-router.put('/:id', jwtAuth, isAdmin, upload.single('image'), books.updateBook);
+router.put('/:id', jwtAuth, isAdmin, books.updateBook);
+router.put('/:id/image', jwtAuth, isAdmin, upload.single('image'), books.changeImage);
 router.get('/:id', books.showBook);
 
 module.exports = router;

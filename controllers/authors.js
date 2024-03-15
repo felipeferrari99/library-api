@@ -13,7 +13,7 @@ module.exports.showAuthor = async (req, res) => {
       if (!author) {
           return res.status(404).json({ message: 'Author not found' });
       }
-      con.query('SELECT title FROM books WHERE author = ?', [id], (err, books) => {
+      con.query('SELECT id, title, image FROM books WHERE author = ?', [id], (err, books) => {
           const responseData = {
               author: author,
               books: books
@@ -59,21 +59,27 @@ module.exports.deleteAuthor = async (req, res) => {
 };
 
 module.exports.updateAuthor = async (req, res) => {
+    const { name, description } = req.body;
+    const { id } = req.params;
+    await con.promise().query('UPDATE authors SET name = ?, description = ? WHERE id = ?', [name, description, id]);
+    res.json('Author updated');
+}
+
+module.exports.changeImage = async (req, res) => {
     let image = 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709583405/library/Kw9sLx3vPq.png';
     if (req.file) {
         image = req.file.path;
     }
-    const { name, description } = req.body;
     const { id } = req.params;
     const [oldRows] = await con.promise().query('SELECT image FROM authors WHERE id = ?', [id]);
     const oldImageUrl = oldRows[0].image;
     const oldPublicId = oldImageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
-    await con.promise().query('UPDATE authors SET name = ?, image = ?, description = ? WHERE id = ?', [name, image, description, id]);
+    await con.promise().query('UPDATE authors SET image = ? WHERE id = ?', [image, id]);
     const [rows] = await con.promise().query('SELECT image FROM authors WHERE id = ?', [id]);
     const imageUrl = rows[0].image;
     const publicId = imageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
     if (publicId !== oldPublicId && oldPublicId !== 'library/Kw9sLx3vPq') {
         await cloudinary.uploader.destroy(oldPublicId);
     }
-    res.json('Author updated');
-}
+    res.json('Image updated');
+};

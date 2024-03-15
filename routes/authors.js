@@ -11,6 +11,7 @@ router.post('/', jwtAuth, isAdmin, upload.single('image'), authors.createAuthor)
 router.get('/', authors.getAuthors);
 router.get('/:id', authors.showAuthor);
 router.delete('/:id', jwtAuth, isAdmin, authors.deleteAuthor);
-router.put('/:id', jwtAuth, isAdmin, upload.single('image'), authors.updateAuthor);
+router.put('/:id', jwtAuth, isAdmin, authors.updateAuthor);
+router.put('/:id/image', jwtAuth, isAdmin, upload.single('image'), authors.changeImage);
 
 module.exports = router;
