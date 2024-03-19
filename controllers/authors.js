@@ -38,6 +38,11 @@ module.exports.deleteAuthor = async (req, res) => {
     const [books] = await con.promise().query('SELECT id FROM books WHERE author = ?', [id]);
     if (books && books.length > 0) {
         const bookIds = books.map((book) => book.id);
+        const [users] = await con.promise().query('SELECT id FROM users WHERE favorite_book IN (?)', [bookIds]);
+        if (users && users.length > 0) {
+            const userIds = users.map((user) => user.id);
+            await con.promise().query("UPDATE users SET favorite_book = NULL WHERE id IN (?)", [userIds]);
+        }
         await con.promise().query('DELETE FROM rents WHERE book_id IN (?)', [bookIds]);
         await con.promise().query('DELETE FROM comments WHERE book_id IN (?)', [bookIds]);
         const [rows] = await con.promise().query('SELECT image FROM books WHERE id IN (?)', [bookIds]);

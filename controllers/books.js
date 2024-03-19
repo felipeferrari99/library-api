@@ -32,6 +32,11 @@ module.exports.deleteBook = async (req, res) => {
     if (publicId !== 'library/Pb4eTcn7tJ') {
         await cloudinary.uploader.destroy(publicId);
     }
+    const [users] = await con.promise().query('SELECT id FROM users WHERE favorite_book = ?', [id]);
+    if (users && users.length > 0) {
+        const userIds = users.map((user) => user.id);
+        await con.promise().query("UPDATE users SET favorite_book = NULL WHERE id IN (?)", [userIds]);
+    }
     await con.promise().query('DELETE FROM rents WHERE book_id = ?', [id]);
     await con.promise().query('DELETE FROM comments WHERE book_id = ?', [id]);
     await con.promise().query('DELETE FROM books WHERE id = ?', [id]);
