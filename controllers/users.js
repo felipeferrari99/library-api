@@ -30,7 +30,6 @@ module.exports.register = async (req, res, next) => {
           const image = rows[0].image;
           const payload = { id: result.insertId, username, type: 'user', image };
           const token = generateToken(payload);
-          decodedToken = JSON.parse(atob(token.split('.')[1]));
           res.json({ token });
         })
         .catch(err => {
@@ -58,7 +57,6 @@ module.exports.login = (req, res, next) => {
       const image = rows[0].image;
       const payload = { id: user.id, username: user.username, type: user.type, image };
       const token = generateToken(payload);
-      decodedToken = JSON.parse(atob(token.split('.')[1]));
       res.json({ token });
     })
     .catch(err => {
@@ -71,15 +69,13 @@ module.exports.login = (req, res, next) => {
 module.exports.updateUser = async (req, res, next) => {
   const id = req.userId;
   if (id != req.params.id) return res.status(401).json({ message: "Unauthorized." });
-  const { email, password, description, favorite_book } = req.body;
+  const { email, password, description } = req.body;
   const [oldRows] = await con.promise().query("SELECT email, password FROM users WHERE id = ?", [id]);
   const oldPassword = oldRows[0].password;
   const oldEmail = oldRows[0].email;
   if (email !== oldEmail) {
     if (await userExists(null, email)) return res.status(400).json({ message: "User already exists" });
   }
-  const [bookRows] = await con.promise().query("SELECT id FROM books WHERE title = ?", [favorite_book]);
-  const bookId = bookRows.length ? bookRows[0].id : null;
   if (password && password.length < 3) return res.status(400).json({ message: "Password is too short." });
   let hashedPassword = oldPassword;
   if (password && password !== oldPassword) {
@@ -95,7 +91,7 @@ module.exports.updateUser = async (req, res, next) => {
       hashedPassword = await hashPassword(password);
     }
   }
-  await con.promise().query("UPDATE users SET email = ?, password = ?, description = ?, favorite_book = ? WHERE id = ?", [email, hashedPassword, description, bookId, id]);
+  await con.promise().query("UPDATE users SET email = ?, password = ?, description = ? WHERE id = ?", [email, hashedPassword, description, id]);
   res.json('User updated');
   (req, res, next);
 };
@@ -128,7 +124,6 @@ module.exports.changeImage = async (req, res, next) => {
           const type = rows[0].type;
           const payload = { id: id, username, type, image };
           const token = generateToken(payload);
-          decodedToken = JSON.parse(atob(token.split('.')[1]));
           res.json({ token });
         })
   })(req, res, next);
@@ -148,6 +143,20 @@ module.exports.showUser = async (req, res) => {
           res.json(responseData);
       });
   });
+};
+
+module.exports.favorite = async (req, res, next) => {
+  const id = req.userId;
+  const bookId = req.params.id;
+  const [rows] = await con.promise().query('SELECT favorite_book FROM users WHERE id = ?', [id]);
+  const favorite_book = rows[0].favorite_book;
+  if (favorite_book == bookId) {
+    await con.promise().query("UPDATE users SET favorite_book = NULL WHERE id = ?", [id]);
+  } else {
+    await con.promise().query("UPDATE users SET favorite_book = ? WHERE id = ?", [bookId, id]);
+  }
+  res.json('User updated');
+  (req, res, next);
 };
 
 module.exports.loginStrategy = async (username, password, done) => {

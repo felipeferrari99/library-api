@@ -15,6 +15,9 @@ module.exports.createRent = async (req, res) => {
         return res.json('Book unavailable!');
     }
     const { daysRented } = req.body;
+    if (daysRented < 1) {
+        return res.json('Insert a valid number of days.')
+    }
     await con.promise().query('INSERT INTO rents (date_rented, date_for_return, book_id, user) VALUES (CURDATE(), CURDATE() + ?, ?, ?)', [daysRented, bookId, userId]);
     await con.promise().query('UPDATE books SET qty_available = qty_available - 1 WHERE id = ?', bookId);
     res.json('Book rented!');

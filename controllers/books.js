@@ -78,7 +78,7 @@ module.exports.showBook = async (req, res) => {
         if (!book) {
             return res.status(404).json({ message: 'Book not found' });
         }
-        con.query('SELECT comments.id, comments.body, users.username FROM comments INNER JOIN users ON comments.user = users.id WHERE comments.book_id = ?', id, (err, comments) => {
+        con.query('SELECT comments.*, users.username FROM comments INNER JOIN users ON comments.user = users.id WHERE comments.book_id = ?', id, (err, comments) => {
             const responseData = {
                 book: book,
                 comments: comments

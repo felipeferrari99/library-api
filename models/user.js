@@ -25,9 +25,30 @@ con.connect(function (err) {
         return;
       }
       console.log('Users table created');
-    });      
+
+      checkAndCreateAdmin().catch((err) => {
+        console.error('Error checking or creating admin user:', err);
+      });
+    });
   }
 );
+
+async function checkAndCreateAdmin() {
+  const adminUserExists = await userExists('admin', 'admin@mail.com');
+
+  if (!adminUserExists) {
+    const hashedPassword = await hashPassword('123');
+
+    const sql = 'INSERT INTO users (username, email, password, type) VALUES (?, ?, ?, ?)';
+    con.query(sql, ['admin', 'admin@mail.com', hashedPassword, 'admin'], (err, result) => {
+      if (err) {
+        console.error('Error creating admin user:', err);
+      } else {
+        console.log('Admin user created');
+      }
+    });
+  }
+}
 
 async function userExists(username, email) {
   return new Promise((resolve, reject) => {

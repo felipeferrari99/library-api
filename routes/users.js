@@ -15,6 +15,7 @@ router.post('/register', users.register);
 router.get('/user/:id', jwtAuth, users.showUser);
 router.put('/user/:id', jwtAuth, getIdFromToken, users.updateUser);
 router.put('/user/:id/image', jwtAuth, getIdFromToken, upload.single('image'), users.changeImage);
+router.put('/books/:id/favorite', jwtAuth, getIdFromToken, users.favorite);
 router.post("/login", users.login);
 
 module.exports = router;

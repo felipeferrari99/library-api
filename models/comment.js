@@ -5,6 +5,7 @@ con.connect(function (err) {
     CREATE TABLE IF NOT EXISTS comments (
       id INT AUTO_INCREMENT PRIMARY KEY,
       body TEXT NOT NULL,
+      rating INT NOT NULL,
       book_id INT NOT NULL,
       user INT NOT NULL,
       FOREIGN KEY (book_id) REFERENCES books(id),

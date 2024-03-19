@@ -7,6 +7,5 @@ const isAuthor = require('../middlewares/isAuthor');
 
 router.post('/', jwtAuth, getIdFromToken, comments.createComment);
 router.delete('/:commentId', jwtAuth, isAuthor, comments.deleteComment);
-router.put('/:commentId', jwtAuth, isAuthor, comments.updateComment);
 
 module.exports = router;
