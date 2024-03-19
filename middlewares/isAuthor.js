@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
-const jwtSecret = 'your_jwt_secret';
+require('dotenv').config();
+const jwtSecret = process.env.SECRET;
 const con = require('../database/db');
 
 module.exports = async function (req, res, next) {

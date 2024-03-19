@@ -1,10 +1,11 @@
 const con = require('../database/db');
 const { userExists, hashPassword, comparePassword } = require('../models/user');
 const jwt = require('jsonwebtoken');
-const jwtSecret = 'your_jwt_secret';
+const jwtSecret = process.env.SECRET;
 const passport = require("passport");
 const bcrypt = require("bcrypt");
 const { cloudinary } = require('../cloudinary');
+require('dotenv').config();
 
 const generateToken = (user) => {
   const payload = { userId: user.id, username: user.username, type: user.type, image: user.image };
