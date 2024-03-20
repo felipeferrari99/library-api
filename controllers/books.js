@@ -1,5 +1,6 @@
 const con = require('../database/db');
 const { cloudinary } = require('../cloudinary');
+require('dotenv').config();
 
 module.exports.getBooks = async (req, res) => {
     con.query('SELECT books.*, authors.name as authorName FROM books INNER JOIN authors ON books.author = authors.id', (err, books) => {
@@ -8,7 +9,7 @@ module.exports.getBooks = async (req, res) => {
 }
 
 module.exports.createBook = async (req, res) => {
-    let image = 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709664984/library/Pb4eTcn7tJ.jpg';
+    let image = process.env.CLOUDINARY_BOOK_URL;
     if (req.file) {
         image = req.file.path;
     }
@@ -29,7 +30,7 @@ module.exports.deleteBook = async (req, res) => {
     const [rows] = await con.promise().query('SELECT image FROM books WHERE id = ?', [id]);
     const imageUrl = rows[0].image;
     const publicId = imageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
-    if (publicId !== 'library/Pb4eTcn7tJ') {
+    if (publicId !== process.env.CLOUDINARY_BOOK_ID) {
         await cloudinary.uploader.destroy(publicId);
     }
     const [users] = await con.promise().query('SELECT id FROM users WHERE favorite_book = ?', [id]);
@@ -58,7 +59,7 @@ module.exports.updateBook = async (req, res) => {
 }
 
 module.exports.changeImage = async (req, res) => {
-    let image = 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709664984/library/Pb4eTcn7tJ.jpg';
+    let image = process.env.CLOUDINARY_BOOK_URL;
     if (req.file) {
         image = req.file.path;
     }
@@ -70,7 +71,7 @@ module.exports.changeImage = async (req, res) => {
     const [rows] = await con.promise().query('SELECT image FROM books WHERE id = ?', [id]);
     const imageUrl = rows[0].image;
     const publicId = imageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
-    if (publicId !== oldPublicId && oldPublicId !== 'library/Pb4eTcn7tJ') {
+    if (publicId !== oldPublicId && oldPublicId !== process.env.CLOUDINARY_BOOK_ID) {
         await cloudinary.uploader.destroy(oldPublicId);
     }
     res.json('Image updated');

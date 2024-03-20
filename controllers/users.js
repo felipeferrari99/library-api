@@ -1,5 +1,5 @@
 const con = require('../database/db');
-const { userExists, hashPassword, comparePassword } = require('../models/user');
+const { userExists, hashPassword, comparePassword } = require('../models/User');
 const jwt = require('jsonwebtoken');
 const jwtSecret = process.env.SECRET;
 const passport = require("passport");
@@ -98,7 +98,7 @@ module.exports.updateUser = async (req, res, next) => {
 };
 
 module.exports.changeImage = async (req, res, next) => {
-  let image = 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709583405/library/Kw9sLx3vPq.png';
+  let image = process.env.CLOUDINARY_PROFILE_URL;
   if (req.file) {
       image = req.file.path;
   }
@@ -110,7 +110,7 @@ module.exports.changeImage = async (req, res, next) => {
   const [rows] = await con.promise().query('SELECT image FROM users WHERE id = ?', [id]);
   const imageUrl = rows[0].image;
   const publicId = imageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
-  if (publicId !== oldPublicId && oldPublicId !== 'library/Kw9sLx3vPq') {
+  if (publicId !== oldPublicId && oldPublicId !== process.env.CLOUDINARY_PROFILE_ID) {
       await cloudinary.uploader.destroy(oldPublicId);
   }
   passport.authenticate("local", (err, user) => {
