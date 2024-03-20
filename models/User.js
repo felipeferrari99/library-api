@@ -11,7 +11,7 @@ con.connect(function (err) {
         email VARCHAR(255) NOT NULL,
         password VARCHAR(255) NOT NULL,
         type ENUM('user', 'admin') NOT NULL DEFAULT 'user',
-        image VARCHAR(255) NOT NULL DEFAULT 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709583405/library/Kw9sLx3vPq.png',
+        image VARCHAR(255) NOT NULL DEFAULT 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1710962002/library/Kw9sLx3vPq.png',
         description TEXT,
         favorite_book INT,
         UNIQUE (username),
