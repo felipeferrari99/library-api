@@ -10,8 +10,8 @@ con.connect(function (err) {
       status VARCHAR(255) NOT NULL DEFAULT "active",
       book_id INT NOT NULL,
       user INT NOT NULL,
-      FOREIGN KEY (book_id) REFERENCES books(id),
-      FOREIGN KEY (user) REFERENCES users(id)
+      FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+      FOREIGN KEY (user) REFERENCES users(id) ON DELETE CASCADE
     )`;
     con.query(sql, function (err, result) {
         if (err) throw err;

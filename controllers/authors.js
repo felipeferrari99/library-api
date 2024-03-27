@@ -39,20 +39,15 @@ module.exports.deleteAuthor = async (req, res) => {
     const [books] = await con.promise().query('SELECT id FROM books WHERE author = ?', [id]);
     if (books && books.length > 0) {
         const bookIds = books.map((book) => book.id);
-        const [users] = await con.promise().query('SELECT id FROM users WHERE favorite_book IN (?)', [bookIds]);
-        if (users && users.length > 0) {
-            const userIds = users.map((user) => user.id);
-            await con.promise().query("UPDATE users SET favorite_book = NULL WHERE id IN (?)", [userIds]);
+        await con.promise().query("UPDATE users SET favorite_book = NULL WHERE favorite_book IN (?)", [bookIds]);
+        const filenames = await con.promise().query('SELECT image FROM books WHERE id IN (?)', [bookIds]);
+        for (let i = 0; i < filenames[0].length; i++) {
+            const filename = filenames[0][i].image;
+            const publicId = filename.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
+            if (publicId !== process.env.CLOUDINARY_BOOK_ID) {
+                await cloudinary.uploader.destroy(publicId);
+            }
         }
-        await con.promise().query('DELETE FROM rents WHERE book_id IN (?)', [bookIds]);
-        await con.promise().query('DELETE FROM comments WHERE book_id IN (?)', [bookIds]);
-        const [rows] = await con.promise().query('SELECT image FROM books WHERE id IN (?)', [bookIds]);
-        const imageUrl = rows[0].image;
-        const publicId = imageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
-        if (publicId !== process.env.CLOUDINARY_BOOK_ID) {
-            await cloudinary.uploader.destroy(publicId);
-        }
-        await con.promise().query('DELETE FROM books WHERE author = ?', [id]);
     }
     const [authorRows] = await con.promise().query('SELECT image FROM authors WHERE id = ?', [id]);
     const authorImageUrl = authorRows[0].image;

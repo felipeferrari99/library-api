@@ -10,7 +10,7 @@ con.connect(function (err) {
       qty_available INT NOT NULL,
       author INT NOT NULL,
       description TEXT,
-      FOREIGN KEY (author) REFERENCES authors(id)
+      FOREIGN KEY (author) REFERENCES authors(id) ON DELETE CASCADE
     )`;
     con.query(sql, function (err, result) {
         if (err) throw err;
