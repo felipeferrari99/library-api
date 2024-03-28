@@ -13,7 +13,16 @@ module.exports.createBook = async (req, res) => {
     if (req.file) {
         image = req.file.path;
     }
-    const { title, release_date, author, qty_available } = req.body;
+    const { title, release_date, description, author, qty_available } = req.body;
+    if (!title || !release_date || !author || !qty_available) {
+        return res.status(422).json({ message: 'Please make sure all fields are filled in correctly.' });
+    } 
+    if (qty_available && qty_available < 0) {
+        return res.status(422).json({ message: 'Insert a valid number.' })
+    }
+    if (release_date == 'Invalid date') {
+        return res.status(422).json({ message: 'Insert a valid date.' })
+    }
     const [authorRows] = await con.promise().query('SELECT id FROM authors WHERE name = ?', [author]);
     if (authorRows.length === 0) {
         const [insertedAuthor] = await con.promise().query('INSERT INTO authors (name) VALUES (?)', [author]);
@@ -21,7 +30,7 @@ module.exports.createBook = async (req, res) => {
     } else {
         authorId = authorRows[0].id;
     }
-    await con.promise().query('INSERT INTO books (title, release_date, qty_available, image, author) VALUES (?, ?, ?, ?, ?)', [title, release_date, qty_available, image, authorId]);
+    await con.promise().query('INSERT INTO books (title, release_date, qty_available, description, image, author) VALUES (?, ?, ?, ?, ?, ?)', [title, release_date, qty_available, description, image, authorId]);
     res.json('Book created');
 }
 
@@ -40,10 +49,16 @@ module.exports.deleteBook = async (req, res) => {
 
 module.exports.updateBook = async (req, res) => {
     const { title, release_date, description, author, qty_available } = req.body;
+    if (!title || !release_date || !author || !qty_available) {
+        return res.status(422).json({ message: 'Please make sure all fields are filled in correctly.' });
+    } 
+    if (qty_available && qty_available < 0) {
+        return res.status(422).json({ message: 'Insert a valid number.' })
+    }
     const { id } = req.params;
     const [authorRows] = await con.promise().query('SELECT id FROM authors WHERE name = ?', [author]);
     if (authorRows.length === 0) {
-        const [insertedAuthor] = await con.promise().query('INSERT INTO authors (name) VALUES ?', author);
+        const [insertedAuthor] = await con.promise().query('INSERT INTO authors (name) VALUES (?)', author);
         authorId = insertedAuthor.insertId;
     } else {
         authorId = authorRows[0].id;

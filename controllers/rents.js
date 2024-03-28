@@ -12,15 +12,15 @@ module.exports.createRent = async (req, res) => {
     const [rows] = await con.promise().query('SELECT qty_available FROM books WHERE id = ?', [bookId]);
     const available = rows[0]?.qty_available;
     if (!available || available < 1) {
-        return res.json('Book unavailable!');
+      return res.status(400).json({ error: 'Book unavailable!' });
     }
     const { daysRented } = req.body;
-    if (daysRented < 1) {
-        return res.json('Insert a valid number of days.')
+    if (!daysRented || daysRented < 1) {
+      return res.status(422).json({ message: 'Insert a valid number of days.' });
     }
     await con.promise().query('INSERT INTO rents (date_rented, date_for_return, book_id, user) VALUES (CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? DAY), ?, ?)', [daysRented, bookId, userId]);
     await con.promise().query('UPDATE books SET qty_available = qty_available - 1 WHERE id = ?', bookId);
-    res.json('Book rented!');
+    return res.status(200).json({ message: 'Book rented!' });
 }
 
 module.exports.allRents = async (req, res) => {

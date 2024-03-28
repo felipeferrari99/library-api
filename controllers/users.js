@@ -15,6 +15,10 @@ const generateToken = (user) => {
 module.exports.register = async (req, res, next) => {
   try {
     const { username, email, password } = req.body;
+    if (!username || !email || !password) {
+      return res.status(422).json({ message: 'Please make sure all fields are filled in correctly.' });
+    }
+    if (password && password.length < 3) return res.status(400).json({ message: "Password is too short." });
     const existingUser = await userExists(username, email);
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
@@ -71,6 +75,9 @@ module.exports.updateUser = async (req, res, next) => {
   const id = req.userId;
   if (id != req.params.id) return res.status(401).json({ message: "Unauthorized." });
   const { email, password, description } = req.body;
+  if (!email || !password) {
+    return res.status(422).json({ message: 'Please make sure the necessary fields are filled in correctly.' });
+  } 
   const [oldRows] = await con.promise().query("SELECT email, password FROM users WHERE id = ?", [id]);
   const oldPassword = oldRows[0].password;
   const oldEmail = oldRows[0].email;
@@ -80,7 +87,7 @@ module.exports.updateUser = async (req, res, next) => {
   if (password && password.length < 3) return res.status(400).json({ message: "Password is too short." });
   let hashedPassword = oldPassword;
   if (password && password !== oldPassword) {
-    const isPasswordMatch = await new Promise((resolve, reject) => {
+    const passwordMatch = await new Promise((resolve, reject) => {
       bcrypt.compare(password, oldPassword, function (err, res) {
         if (err) {
           reject(err);
@@ -88,7 +95,7 @@ module.exports.updateUser = async (req, res, next) => {
         resolve(res);
       });
     });
-    if (!isPasswordMatch) {
+    if (!passwordMatch) {
       hashedPassword = await hashPassword(password);
     }
   }
@@ -98,11 +105,12 @@ module.exports.updateUser = async (req, res, next) => {
 };
 
 module.exports.changeImage = async (req, res, next) => {
+  const { id } = req.params;
+  if (id != req.userId) return res.status(401).json({ message: "Unauthorized." });
   let image = process.env.CLOUDINARY_PROFILE_URL;
   if (req.file) {
       image = req.file.path;
   }
-  const { id } = req.params;
   const [oldRows] = await con.promise().query('SELECT image FROM users WHERE id = ?', [id]);
   const oldImageUrl = oldRows[0].image;
   const oldPublicId = oldImageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');

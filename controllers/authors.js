@@ -30,6 +30,9 @@ module.exports.createAuthor = async (req, res) => {
         image = req.file.path;
     }
     const { name, description } = req.body;
+    if (!name) {
+        return res.status(422).json({ message: 'Please make sure the name field is filled.' });
+    } 
     await con.promise().query('INSERT INTO authors (name, image, description) VALUES (?, ?, ?)', [name, image, description]);
     res.json('Author created');
 }
@@ -62,6 +65,9 @@ module.exports.deleteAuthor = async (req, res) => {
 module.exports.updateAuthor = async (req, res) => {
     const { name, description } = req.body;
     const { id } = req.params;
+    if (!name) {
+        return res.status(422).json({ message: 'Please make sure the name field is filled.' });
+    }
     await con.promise().query('UPDATE authors SET name = ?, description = ? WHERE id = ?', [name, description, id]);
     res.json('Author updated');
 }

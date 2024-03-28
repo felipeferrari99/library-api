@@ -12,7 +12,7 @@ const upload = multer({ storage });
 passport.use(new LocalStrategy(users.loginStrategy));
 
 router.post('/register', users.register);
-router.get('/user/:id', jwtAuth, users.showUser);
+router.get('/user/:id', users.showUser);
 router.put('/user/:id', jwtAuth, getIdFromToken, users.updateUser);
 router.put('/user/:id/image', jwtAuth, getIdFromToken, upload.single('image'), users.changeImage);
 router.put('/books/:id/favorite', jwtAuth, getIdFromToken, users.favorite);
