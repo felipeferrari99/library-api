@@ -24,13 +24,23 @@ module.exports.createRent = async (req, res) => {
 }
 
 module.exports.allRents = async (req, res) => {
+    con.query("SELECT * FROM rents WHERE status = 'active' AND date_for_return < CURDATE()", (err, activeRents) => {
+        activeRents.forEach((activeRent) => {
+            con.query("UPDATE rents SET status = 'late' WHERE id = ?", [activeRent.id]);
+        });
+    })
     con.query('SELECT rents.*, books.title, authors.name as authorName, users.username FROM rents INNER JOIN books ON rents.book_id = books.id INNER JOIN authors ON books.author = authors.id INNER JOIN users ON rents.user = users.id', (err, rents) => {
-        res.send(rents)
+      res.send(rents);
     });
-}
+};
 
 module.exports.myRents = async (req, res) => {
     const userId = req.userId;
+    con.query("SELECT * FROM rents WHERE status = 'active' AND date_for_return < CURDATE()", (err, activeRents) => {
+        activeRents.forEach(async (activeRent) => {
+            con.query("UPDATE rents SET status = 'late' WHERE id = ?", [activeRent.id]);
+        });
+    })
     con.query('SELECT rents.*, books.title, authors.name as authorName FROM rents INNER JOIN books ON rents.book_id = books.id INNER JOIN authors ON books.author = authors.id WHERE rents.user = ?', [userId], (err, rents) => {
         res.send(rents)
     });
