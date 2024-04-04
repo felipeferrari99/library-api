@@ -3,6 +3,7 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT;
 const cookieParser = require('cookie-parser');
+const ExpressError = require('./utils/ExpressError.js');
 const cors = require('cors');
 
 app.use(cors());
