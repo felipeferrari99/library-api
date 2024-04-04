@@ -14,13 +14,16 @@ module.exports.createBook = async (req, res) => {
         image = req.file.path;
     }
     const { title, release_date, description, author, qty_available } = req.body;
-    if (!title || !release_date || !author || !qty_available) {
-        return res.status(422).json({ message: 'Please make sure all fields are filled in correctly.' });
+    if (!(/[a-zA-Z]/.test(title))) {
+        return res.status(422).json({ message: 'Insert a valid title.' });
     } 
-    if (qty_available && qty_available < 0) {
-        return res.status(422).json({ message: 'Insert a valid number.' })
+    if (!(/[a-zA-Z]/.test(author))) {
+        return res.status(422).json({ message: 'Insert a valid author name.' });
     }
-    if (release_date == 'Invalid date') {
+    if (!qty_available || qty_available < 0) {
+        return res.status(422).json({ message: 'Insert a valid quantity of available books.' })
+    }
+    if (!release_date || release_date == 'Invalid date') {
         return res.status(422).json({ message: 'Insert a valid date.' })
     }
     const [authorRows] = await con.promise().query('SELECT id FROM authors WHERE name = ?', [author]);
@@ -49,11 +52,14 @@ module.exports.deleteBook = async (req, res) => {
 
 module.exports.updateBook = async (req, res) => {
     const { title, release_date, description, author, qty_available } = req.body;
-    if (!title || !release_date || !author || !qty_available) {
-        return res.status(422).json({ message: 'Please make sure all fields are filled in correctly.' });
+    if (!(/[a-zA-Z]/.test(title))) {
+        return res.status(422).json({ message: 'Insert a valid title.' });
     } 
-    if (qty_available && qty_available < 0) {
-        return res.status(422).json({ message: 'Insert a valid number.' })
+    if (!(/[a-zA-Z]/.test(author))) {
+        return res.status(422).json({ message: 'Insert a valid author name.' });
+    }
+    if (!qty_available || qty_available < 0) {
+        return res.status(422).json({ message: 'Insert a valid quantity of available books.' })
     }
     const { id } = req.params;
     const [authorRows] = await con.promise().query('SELECT id FROM authors WHERE name = ?', [author]);
@@ -63,6 +69,7 @@ module.exports.updateBook = async (req, res) => {
     } else {
         authorId = authorRows[0].id;
     }
+    console.log(release_date)
     await con.promise().query('UPDATE books SET title = ?, release_date = ?, description = ?, author = ?, qty_available = ? WHERE id = ?', [title, release_date, description, authorId, qty_available, id]);
     res.json('Book updated');
 }

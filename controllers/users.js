@@ -19,10 +19,8 @@ module.exports.register = async (req, res, next) => {
       return res.status(422).json({ message: 'Please make sure all fields are filled in correctly.' });
     }
     if (password && password.length < 3) return res.status(400).json({ message: "Password is too short." });
-    const existingUser = await userExists(username, email);
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+    if (await userExists(username.trim(), null)) return res.status(400).json({ message: 'User already exists' });
+    if (await userExists(null, email)) return res.status(400).json({ message: "There is already an account using this e-mail address." });
     const hashedPassword = await hashPassword(password);
     const query = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
     con.query(query, [username, email, hashedPassword], function (err, result) {
@@ -82,7 +80,7 @@ module.exports.updateUser = async (req, res, next) => {
   const oldPassword = oldRows[0].password;
   const oldEmail = oldRows[0].email;
   if (email !== oldEmail) {
-    if (await userExists(null, email)) return res.status(400).json({ message: "User already exists" });
+    if (await userExists(null, email)) return res.status(400).json({ message: "There is already an account using this e-mail address." });
   }
   if (password && password.length < 3) return res.status(400).json({ message: "Password is too short." });
   let hashedPassword = oldPassword;
