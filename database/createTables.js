@@ -6,7 +6,7 @@ module.exports.CreateTables = (con) => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         description TEXT,
-        image VARCHAR(255) NOT NULL DEFAULT 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1710962002/library/Kw9sLx3vPq.png'
+        image VARCHAR(255) NOT NULL DEFAULT '${process.env.CLOUDINARY_PROFILE_URL}'
     )`;
     con.query(sql, function (err, result) {
         if (err) throw err;
@@ -20,7 +20,7 @@ module.exports.CreateTables = (con) => {
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(255) NOT NULL,
         release_date DATE NOT NULL,
-        image VARCHAR(255) NOT NULL DEFAULT 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1709583857/library/Pb4eTcn7tJ.jpg',
+        image VARCHAR(255) NOT NULL DEFAULT '${process.env.CLOUDINARY_BOOK_URL}',
         qty_available INT NOT NULL,
         author INT NOT NULL,
         description TEXT,
@@ -40,7 +40,7 @@ module.exports.CreateTables = (con) => {
         email VARCHAR(255) NOT NULL,
         password VARCHAR(255) NOT NULL,
         type ENUM('user', 'admin') NOT NULL DEFAULT 'user',
-        image VARCHAR(255) NOT NULL DEFAULT 'https://res.cloudinary.com/dsv8lpacy/image/upload/v1710962002/library/Kw9sLx3vPq.png',
+        image VARCHAR(255) NOT NULL DEFAULT '${process.env.CLOUDINARY_PROFILE_URL}',
         description TEXT,
         favorite_book INT,
         UNIQUE (username),

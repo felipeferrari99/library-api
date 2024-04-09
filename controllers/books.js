@@ -69,7 +69,6 @@ module.exports.updateBook = async (req, res) => {
     } else {
         authorId = authorRows[0].id;
     }
-    console.log(release_date)
     await con.promise().query('UPDATE books SET title = ?, release_date = ?, description = ?, author = ?, qty_available = ? WHERE id = ?', [title, release_date, description, authorId, qty_available, id]);
     res.json('Book updated');
 }

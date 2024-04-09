@@ -15,7 +15,6 @@ module.exports.createComment = async (req, res) => {
 }
 
 module.exports.deleteComment = async (req, res) => {
-    const bookId = req.params.id;
     const { commentId } = req.params;
     await con.promise().query('DELETE FROM comments WHERE id = ?', [commentId]);
     res.json('Comment deleted');

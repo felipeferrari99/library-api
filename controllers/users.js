@@ -12,33 +12,23 @@ const generateToken = (user) => {
   return jwt.sign(payload, jwtSecret, { expiresIn: "1h" });
 };
 
-module.exports.register = async (req, res, next) => {
+module.exports.register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    if (!username || !email || !password) {
-      return res.status(422).json({ message: 'Please make sure all fields are filled in correctly.' });
-    }
+    if (!username || !email || !password) return res.status(422).json({ message: 'Please make sure all fields are filled in correctly.' });
     if (password && password.length < 3) return res.status(400).json({ message: "Password is too short." });
     if (await userExists(username.trim(), null)) return res.status(400).json({ message: 'User already exists' });
     if (await userExists(null, email)) return res.status(400).json({ message: "There is already an account using this e-mail address." });
     const hashedPassword = await hashPassword(password);
     const query = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
     con.query(query, [username, email, hashedPassword], function (err, result) {
-      if (err) {
-        console.error('Error registering user:', err);
-        return res.status(500).json({ message: 'Internal server error' });
-      }
       con.promise().query('SELECT image FROM users WHERE id = ?', [result.insertId])
-        .then(([rows, fields]) => {
+        .then(([rows]) => {
           const image = rows[0].image;
           const payload = { id: result.insertId, username, type: 'user', image };
           const token = generateToken(payload);
           res.json({ token });
         })
-        .catch(err => {
-          console.error('Error fetching user image:', err);
-          return res.status(500).json({ message: 'Internal server error' });
-        });
     });
   } catch (err) {
     console.error('Error registering user:', err);
@@ -56,7 +46,7 @@ module.exports.login = (req, res, next) => {
       return res.status(401).json({ message: 'Invalid username or password' });
     }
     con.promise().query('SELECT image FROM users WHERE id = ?', [user.id])
-    .then(([rows, fields]) => {
+    .then(([rows]) => {
       const image = rows[0].image;
       const payload = { id: user.id, username: user.username, type: user.type, image };
       const token = generateToken(payload);
@@ -73,23 +63,15 @@ module.exports.updateUser = async (req, res, next) => {
   const id = req.userId;
   if (id != req.params.id) return res.status(401).json({ message: "Unauthorized." });
   const { email, password, description } = req.body;
-  if (!email || !password) {
-    return res.status(422).json({ message: 'Please make sure the necessary fields are filled in correctly.' });
-  } 
-  const [oldRows] = await con.promise().query("SELECT email, password FROM users WHERE id = ?", [id]);
-  const oldPassword = oldRows[0].password;
-  const oldEmail = oldRows[0].email;
-  if (email !== oldEmail) {
-    if (await userExists(null, email)) return res.status(400).json({ message: "There is already an account using this e-mail address." });
-  }
+  if (!email || !password) return res.status(422).json({ message: 'Please make sure the necessary fields are filled in correctly.' });
+  const [rows] = await con.promise().query("SELECT email, password FROM users WHERE id = ?", [id]);
+  if ((email !== rows[0].email) && await userExists(null, email)) return res.status(400).json({ message: "There is already an account using this e-mail address." });
   if (password && password.length < 3) return res.status(400).json({ message: "Password is too short." });
-  let hashedPassword = oldPassword;
-  if (password && password !== oldPassword) {
+  let hashedPassword = rows[0].password;
+  if (password && password !== rows[0].password) {
     const passwordMatch = await new Promise((resolve, reject) => {
-      bcrypt.compare(password, oldPassword, function (err, res) {
-        if (err) {
-          reject(err);
-        }
+      bcrypt.compare(password, rows[0].password, function (err, res) {
+        if (err) reject(err);
         resolve(res);
       });
     });
@@ -107,7 +89,7 @@ module.exports.changeImage = async (req, res, next) => {
   if (id != req.userId) return res.status(401).json({ message: "Unauthorized." });
   let image = process.env.CLOUDINARY_PROFILE_URL;
   if (req.file) {
-      image = req.file.path;
+    image = req.file.path;
   }
   const [oldRows] = await con.promise().query('SELECT image FROM users WHERE id = ?', [id]);
   const oldImageUrl = oldRows[0].image;
@@ -117,11 +99,11 @@ module.exports.changeImage = async (req, res, next) => {
   const imageUrl = rows[0].image;
   const publicId = imageUrl.split('/').slice(-2).join('/').split('.').slice(0, -1).join('.');
   if (publicId !== oldPublicId && oldPublicId !== process.env.CLOUDINARY_PROFILE_ID) {
-      await cloudinary.uploader.destroy(oldPublicId);
+    await cloudinary.uploader.destroy(oldPublicId);
   }
   passport.authenticate("local", (err, user) => {
     if (err) {
-      console.error('Error during login:', err);
+      console.error('Error during update:', err);
       return res.status(500).json({ message: 'Internal server error' });
     }
     con.promise().query('SELECT username, type, image FROM users WHERE id = ?', [id])
@@ -139,13 +121,11 @@ module.exports.changeImage = async (req, res, next) => {
 module.exports.showUser = async (req, res) => {
   const { id } = req.params;
   con.query('SELECT * FROM users WHERE id = ?', [id], (err, user) => {
-      if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-      }
+      if (!user) return res.status(404).json({ message: 'User not found' });
       con.query('SELECT users.favorite_book, books.title, books.image, books.author, authors.name as authorName FROM users INNER JOIN books ON books.id = users.favorite_book INNER JOIN authors ON books.author = authors.id WHERE users.id = ?;', [id], (err, favorite_book) => {
           const responseData = {
-              user: user,
-              book: favorite_book
+            user: user,
+            book: favorite_book
           };
           res.json(responseData);
       });
@@ -157,11 +137,7 @@ module.exports.favorite = async (req, res, next) => {
   const bookId = req.params.id;
   const [rows] = await con.promise().query('SELECT favorite_book FROM users WHERE id = ?', [id]);
   const favorite_book = rows[0].favorite_book;
-  if (favorite_book == bookId) {
-    await con.promise().query("UPDATE users SET favorite_book = NULL WHERE id = ?", [id]);
-  } else {
-    await con.promise().query("UPDATE users SET favorite_book = ? WHERE id = ?", [bookId, id]);
-  }
+  await con.promise().query(`UPDATE users SET favorite_book = ${favorite_book == bookId ? "NULL" : bookId} WHERE id = ?`, [id]);
   res.json('User updated');
   (req, res, next);
 };
