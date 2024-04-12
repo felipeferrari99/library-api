@@ -3,7 +3,8 @@ const { cloudinary } = require('../cloudinary');
 require('dotenv').config();
 
 module.exports.getBooks = async (req, res) => {
-    con.query('SELECT books.*, authors.name as authorName FROM books INNER JOIN authors ON books.author = authors.id', (err, books) => {
+    const { search } = req.query;
+    con.query(`SELECT books.*, authors.name as authorName FROM books INNER JOIN authors ON books.author = authors.id WHERE books.title LIKE '${search}%'`, [search], (err, books) => {
       res.send(books)
     });
 }

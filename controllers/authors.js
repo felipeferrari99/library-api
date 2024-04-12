@@ -3,7 +3,8 @@ const { cloudinary } = require('../cloudinary');
 require('dotenv').config();
 
 module.exports.getAuthors = async (req, res) => {
-    con.query('SELECT * FROM authors', (err, authors) => {
+    const { search } = req.query;
+    con.query(`SELECT * FROM authors WHERE name LIKE '${search}%'`, [search], (err, authors) => {
       res.send(authors)
     });
 }
